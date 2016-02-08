@@ -6,8 +6,7 @@ import edu.wpi.first.wpilibj.SampleRobot;
 
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.Timer; 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.CANTalon;
 import edu.wpi.first.wpilibj.Jaguar;
@@ -49,18 +48,18 @@ public class Robot extends SampleRobot {
 	Jaguar backRight = new Jaguar(3);
 	Jaguar bogieRight1 = new Jaguar(4);
 	Jaguar bogieRight2 = new Jaguar(5);
-	
-	
+    Joystick drivestick = new Joystick(0);
+    Joystick mechstick = new Joystick(1);
+
+    Servo ballpusher = new Servo(6);
 	// }
 	int session; Image frame; Image binaryFrame;
 	
+    final double DEADZONEX = 0.05, DEADZONEY = 0.05;
 	
 	
     RobotDrive myRobot;
-    Joystick stick;
-    final String defaultAuto = "Default";
-    final String customAuto = "My Auto";
-    SendableChooser chooser;
+    Joystick stick; 
 
     public Robot() {
         myRobot = new RobotDrive(0, 1);
@@ -81,26 +80,9 @@ public class Robot extends SampleRobot {
     	angler.changeControlMode(CANTalon.TalonControlMode.Position);
     	fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
     	fly2.changeControlMode(CANTalon.TalonControlMode.Speed);
-        chooser = new SendableChooser();
-        chooser.addDefault("Default Auto", defaultAuto);
-        chooser.addObject("My Auto", customAuto);
-        SmartDashboard.putData("Auto modes", chooser);
     }
 
-	/**
-	 * This autonomous (along with the chooser code above) shows how to select between different autonomous modes
-	 * using the dashboard. The sendable chooser code works with the Java SmartDashboard. If you prefer the LabVIEW
-	 * Dashboard, remove all of the chooser code and uncomment the getString line to get the auto name from the text box
-	 * below the Gyro
-	 *
-	 * You can add additional auto modes by adding additional comparisons to the if-else structure below with additional strings.
-	 * If using the SendableChooser make sure to add them to the chooser code above as well.
-	 */
     public void autonomous() {
-    	
-    	String autoSelected = (String) chooser.getSelected();
-//		String autoSelected = SmartDashboard.getString("Auto Selector", defaultAuto);
-		System.out.println("Auto selected: " + autoSelected);
     	
     }
 
@@ -110,11 +92,51 @@ public class Robot extends SampleRobot {
     public void operatorControl() {
     	NIVision.IMAQdxStartAcquisition(session);
         myRobot.setSafetyEnabled(true);
+        
         while (isOperatorControl() && isEnabled()) {
         	
         	NIVision.IMAQdxGrab(session, frame, 1);
     		CameraServer.getInstance().setImage(frame);
-            //myRobot.arcadeDrive(stick); // drive with arcade style (use right stick)
+
+            x = drivestick.getX();
+            y = drivestick.getY();
+            mechX = mechstick.getX();
+            mechY = mechstick.getY();
+
+            if(Math.abs(x) > DEADZONEX || Math.abs(y) > DEADZONEY){
+                System.out.println("x: " + x + "  y: " + y + " z: " + z);
+                bogieLeft1.set(x + -y );
+                bogieLeft2.set(x + -y );
+                backLeft.set(x + -y);
+                backRight.set(x + y);
+                bogieRight1.set(x + y);
+                bogieRight2.set(x + y);
+                
+            }
+            else
+            {
+                bogieLeft1.set(0);
+                bogieLeft2.set(0);
+                backLeft.set(0);
+                backRight.set(0);
+                bogieRight1.set(0);
+                bogieRight2.set(0);
+            }
+
+            if(Math.abs(mechX) > DEADZONEX || Math.abs(mechY) > DEADZONEY)
+            {
+                //fly.set we will assume it sets it to a given speed
+                //angler.set we will assume it sets it to a given position between 0 and 1
+                //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
+                
+                
+            }
+            else
+            {
+
+
+            }
+
             Timer.delay(0.005);		// wait for a motor update time
         }
     }
