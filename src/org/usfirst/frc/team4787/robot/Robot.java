@@ -46,7 +46,8 @@ public class Robot extends SampleRobot {
 	final int SERVO_PWM = 6;
 	
 	final int FLYWHEELS_SHOOTRATE = 300, FLYWHEELS_GRABRATE = -30;
-	
+        double pusherAnglePos = 00, pusherMinAngle = -5, pusherMaxAngle = 80, pusherAngleStep = .6;
+        
 	CANTalon fly1 = new CANTalon(FLY1_CAN);
 	CANTalon fly2 = new CANTalon(FLY2_CAN);
 	CANTalon angler = new CANTalon(ANG_CAN);
@@ -58,14 +59,13 @@ public class Robot extends SampleRobot {
 	Talon bogieRight1 = new Talon(BOGRIGHT1_PWM);
 	Talon bogieRight2 = new Talon(BOGRIGHT2_PWM);
     
-	Joystick drivestick = new Joystick(JOYSTICK_USB);
-    Joystick mechstick = new Joystick(MECHSTICK_USB);
-
-    Servo ballpusher = new Servo(SERVO_PWM);
+        Joystick drivestick = new Joystick(JOYSTICK_USB);
+        Joystick mechstick = new Joystick(MECHSTICK_USB);
+        
+        ServoWrapper ballPusher = new ServoWrapper(SERVO_PWM, pusherMinAngle, pusherMaxAngle, pusherAnglePos, pusherAngleStep);
     
     double mechX, mechY, x, y, z;
     double mechScaleFactor = 0.01, mechPos, mechNext;
-    double pusherAnglePos = 00, pusherMinAngle = -5, pusherMaxAngle = 80, pusherAngleStep = .6;
     double mechMinLimit = 0.05, mechMaxLimit = 0.8; //NOT REAL VALUES
 	
 	int session; Image frame, binaryFrame; // Vision bois
@@ -207,25 +207,15 @@ public class Robot extends SampleRobot {
             //trigger = new JoystickButton(drivestick, 1);
             boolean flyOutButton = mechstick.getRawButton(3);
             boolean flyInButton = mechstick.getRawButton(2);
-            
-            // DEBUG
-//            boolean servoDebugButton0 = mechstick.getRawButton(9);
-//            boolean servoDebugButton1 = mechstick.getRawButton(8);
-//            
-//            if (servoDebugButton0) {
-//            	pusherAnglePos = pusherAnglePos + pusherAngleStep >= pusherMaxAngle ? pusherMaxAngle : pusherAnglePos + pusherAngleStep;
-//            }
-//        	if (servoDebugButton1) {
-//        		pusherAnglePos = pusherAnglePos - pusherAngleStep <= pusherMinAngle ? pusherMinAngle : pusherAnglePos - pusherAngleStep;
-//            }
+            boolean fireButton = mechstick.getRawButton(1);
             
             if(flyOutButton)
             {
             	fly1.set(FLYWHEELS_SHOOTRATE);//don't know what to set it to
             	fly2.set(-FLYWHEELS_SHOOTRATE);
-            	if (mechstick.getRawButton(1))
+            	if (fireButton)
             	{
-            		pusherAnglePos = pusherAnglePos + pusherAngleStep > pusherMaxAngle ? pusherMaxAngle : pusherAnglePos + pusherAngleStep;
+            		ballPusher.stepFwd();
             	}
             }
 
@@ -233,17 +223,15 @@ public class Robot extends SampleRobot {
             {
             	fly1.set(FLYWHEELS_GRABRATE);//not sure which should be + and -
             	fly2.set(-FLYWHEELS_GRABRATE);
-            	pusherAnglePos = pusherAnglePos - pusherAngleStep < pusherMinAngle ? pusherMinAngle : pusherAnglePos - pusherAngleStep;
+            	ballPusher.stepBwd();
             }
             
             else
             {
             	fly1.set(0);
             	fly2.set(0);
-            	pusherAnglePos = pusherAnglePos - pusherAngleStep < pusherMinAngle ? pusherMinAngle : pusherAnglePos - pusherAngleStep;
+            	ballPusher.stepBwd();
             }
-            ballpusher.setAngle(pusherAnglePos);
-            System.out.println("Pusher angle: " + pusherAnglePos);
             
             Timer.delay(0.005);		// wait for a motor update time
         }
