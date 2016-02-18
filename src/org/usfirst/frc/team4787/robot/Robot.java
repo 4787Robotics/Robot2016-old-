@@ -10,7 +10,8 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Timer; 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.CANTalon;
-import edu.wpi.first.wpilibj.Jaguar;
+import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.Servo;
 
@@ -39,7 +40,7 @@ import com.ni.vision.NIVision.ImageType;
  */
 public class Robot extends SampleRobot {
 	
-	final int FLY1_CAN = 0, FLY2_CAN = 1, ANG_CAN = 2;
+	final int ANG_CAN  = 2, FLY2_CAN = 1, FLY1_CAN = 0;
 	final int BOGLEFT1_PWM = 0, BOGLEFT2_PWM = 1, BLEFT_PWM = 2, BRIGHT_PWM = 3, BOGRIGHT1_PWM = 4, BOGRIGHT2_PWM = 5;
 	final int JOYSTICK_USB = 0, MECHSTICK_USB = 1;
 	final int SERVO_PWM = 6;
@@ -50,12 +51,12 @@ public class Robot extends SampleRobot {
 	CANTalon fly2 = new CANTalon(FLY2_CAN);
 	CANTalon angler = new CANTalon(ANG_CAN);
 	
-	Jaguar bogieLeft1 = new Jaguar(BOGLEFT1_PWM);
-	Jaguar bogieLeft2 = new Jaguar(BOGLEFT2_PWM);
-	Jaguar backLeft = new Jaguar(BLEFT_PWM);
-	Jaguar backRight = new Jaguar(BRIGHT_PWM);
-	Jaguar bogieRight1 = new Jaguar(BOGRIGHT1_PWM);
-	Jaguar bogieRight2 = new Jaguar(BOGRIGHT2_PWM);
+	Talon bogieLeft1 = new Talon(BOGLEFT1_PWM);
+	Talon bogieLeft2 = new Talon(BOGLEFT2_PWM);
+	Victor backLeft = new Victor(BLEFT_PWM);
+	Victor backRight = new Victor(BRIGHT_PWM);
+	Talon bogieRight1 = new Talon(BOGRIGHT1_PWM);
+	Talon bogieRight2 = new Talon(BOGRIGHT2_PWM);
     
 	Joystick drivestick = new Joystick(JOYSTICK_USB);
     Joystick mechstick = new Joystick(MECHSTICK_USB);
@@ -63,24 +64,26 @@ public class Robot extends SampleRobot {
     Servo ballpusher = new Servo(SERVO_PWM);
     
     double mechX, mechY, x, y, z;
+    double mechScaleFactor = 0.01, mechPos, mechNext;
+    double pusherAnglePos = 00, pusherMinAngle = -5, pusherMaxAngle = 80, pusherAngleStep = .6;
+    double mechMinLimit = 0.05, mechMaxLimit = 0.8; //NOT REAL VALUES
 	
 	int session; Image frame, binaryFrame; // Vision bois
 	
     final double DEADZONEX = 0.05, DEADZONEY = 0.05, ANGLER_RAMPRATE = 3.0; //No more than a change of 3V per second
-	
-    RobotDrive myRobot;
+    
     Joystick stick; 
 
     public Robot() {
         stick = new Joystick(0);
         
         // Vision Dashboard code
-    	frame = NIVision.imaqCreateImage(ImageType.IMAGE_RGB, 0);
-		binaryFrame = NIVision.imaqCreateImage(ImageType.IMAGE_U8, 0);
+    	//frame = NIVision.imaqCreateImage(ImageType.IMAGE_RGB, 0);
+		//binaryFrame = NIVision.imaqCreateImage(ImageType.IMAGE_U8, 0);
 		
     	// The camera name (ex "cam0") can be found through the roborio web interface
-        session = NIVision.IMAQdxOpenCamera("cam0", NIVision.IMAQdxCameraControlMode.CameraControlModeController);
-        NIVision.IMAQdxConfigureGrab(session);
+        //session = NIVision.IMAQdxOpenCamera("cam0", NIVision.IMAQdxCameraControlMode.CameraControlModeController);
+        //NIVision.IMAQdxConfigureGrab(session);
         
     }
     
@@ -140,13 +143,12 @@ public class Robot extends SampleRobot {
      * Runs the motors with arcade steering.
      */
     public void operatorControl() {
-    	NIVision.IMAQdxStartAcquisition(session);
-        myRobot.setSafetyEnabled(true);
+    	//NIVision.IMAQdxStartAcquisition(session);
         
         while (isOperatorControl() && isEnabled()) {
         	
-        	NIVision.IMAQdxGrab(session, frame, 1);
-    		CameraServer.getInstance().setImage(frame);
+        	//NIVision.IMAQdxGrab(session, frame, 1);
+    		//CameraServer.getInstance().setImage(frame);
 
             x = drivestick.getX();
             y = drivestick.getY();
@@ -155,7 +157,7 @@ public class Robot extends SampleRobot {
             z = mechstick.getZ();
 
             if(Math.abs(x) > DEADZONEX || Math.abs(y) > DEADZONEY){
-                System.out.println("x: " + x + "  y: " + y + " z: " + z);
+//                System.out.println("x: " + x + "  y: " + y + " z: " + z);
                 bogieLeft1.set(x + -y );
                 bogieLeft2.set(x + -y );
                 backLeft.set(x + -y);
@@ -174,27 +176,30 @@ public class Robot extends SampleRobot {
                 bogieRight2.set(0);
             }
 
-            if(Math.abs(mechX) > DEADZONEX || Math.abs(mechY) > DEADZONEY)
+            if(Math.abs(mechY) > DEADZONEY)
             {
+            	mechNext = 0;
                 //angler.set we will assume it sets it to a given position between 0 and 1
                 //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
                 
             	//ups = updates per second (based on Timer.delay(0.005))
             	//rpm/60 / ups = how much it revolves per update
             	
-            	//angle (always between -20 and 20 (<-- for example, idk what range of motion we'll actually use))
-            	
             	/*
             	 * int mechSign = Math.sign(mechY)
             	 * if(angle * mechSign/)
             	 */
-            	
-                
-            }
-            else
-            {
-
-
+            	mechPos = angler.getEncPosition(); 
+            	mechNext = mechPos + mechScaleFactor * mechY;
+            	if(mechNext > mechMaxLimit)
+            	{
+            		mechNext = mechMaxLimit;
+            	}
+            	else if (mechNext < mechMinLimit)
+            	{
+            		mechNext = mechMinLimit;
+            	}
+            	angler.set(mechNext);                
             }
             
             
@@ -203,23 +208,42 @@ public class Robot extends SampleRobot {
             boolean flyOutButton = mechstick.getRawButton(3);
             boolean flyInButton = mechstick.getRawButton(2);
             
+            // DEBUG
+//            boolean servoDebugButton0 = mechstick.getRawButton(9);
+//            boolean servoDebugButton1 = mechstick.getRawButton(8);
+//            
+//            if (servoDebugButton0) {
+//            	pusherAnglePos = pusherAnglePos + pusherAngleStep >= pusherMaxAngle ? pusherMaxAngle : pusherAnglePos + pusherAngleStep;
+//            }
+//        	if (servoDebugButton1) {
+//        		pusherAnglePos = pusherAnglePos - pusherAngleStep <= pusherMinAngle ? pusherMinAngle : pusherAnglePos - pusherAngleStep;
+//            }
+            
             if(flyOutButton)
             {
             	fly1.set(FLYWHEELS_SHOOTRATE);//don't know what to set it to
             	fly2.set(-FLYWHEELS_SHOOTRATE);
+            	if (mechstick.getRawButton(1))
+            	{
+            		pusherAnglePos = pusherAnglePos + pusherAngleStep > pusherMaxAngle ? pusherMaxAngle : pusherAnglePos + pusherAngleStep;
+            	}
             }
 
             else if(flyInButton)
             {
             	fly1.set(FLYWHEELS_GRABRATE);//not sure which should be + and -
             	fly2.set(-FLYWHEELS_GRABRATE);
+            	pusherAnglePos = pusherAnglePos - pusherAngleStep < pusherMinAngle ? pusherMinAngle : pusherAnglePos - pusherAngleStep;
             }
             
             else
             {
             	fly1.set(0);
             	fly2.set(0);
+            	pusherAnglePos = pusherAnglePos - pusherAngleStep < pusherMinAngle ? pusherMinAngle : pusherAnglePos - pusherAngleStep;
             }
+            ballpusher.setAngle(pusherAnglePos);
+            System.out.println("Pusher angle: " + pusherAnglePos);
             
             Timer.delay(0.005);		// wait for a motor update time
         }
@@ -228,6 +252,30 @@ public class Robot extends SampleRobot {
     /**
      * Runs during test mode
      */
-    public void test() {
+    int motorSwitch = 0;
+    double lastTime = 0;
+    CANTalon[] motorList = {fly1, fly2, angler};
+    
+    public void test() 
+    {
+    	SmartDashboard.putNumber("Test Motor: ", motorSwitch);
+    	while(isTest() && isEnabled()){
+    		y = drivestick.getY();
+    		if (drivestick.getRawButton(1))
+    		{
+    			if ((Timer.getFPGATimestamp() - lastTime) > .5)
+    			{
+    				motorList[motorSwitch].set(0);
+    				lastTime = Timer.getFPGATimestamp();
+    				motorSwitch = (motorSwitch + 1) % motorList.length;
+    				System.out.println("Test Motor: " + motorSwitch);
+    			}
+    		}
+    		
+    		if(Math.abs(y) > DEADZONEY)
+    		{
+    			motorList[motorSwitch].set(y);
+    		}
+    	}
     }
 }
