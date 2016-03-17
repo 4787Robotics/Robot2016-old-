@@ -55,6 +55,7 @@ public class Robot extends SampleRobot {
     double pusherAnglePos = 00, pusherMinAngle = -5, pusherMaxAngle = 80, pusherAngleStep = .6;
     double mechScaleFactor = 0.01, mechPos, mechNext;
     double mechMinLimit = 0.05, mechMaxLimit = 0.8; //NOT REAL VALUES
+    final int PULSE_REVS = 1316; //188:1 gear ratio and 7 pulses for 1316
     
     //testing parameters and cooldowns
     int motorSwitch = 0;
@@ -112,8 +113,9 @@ public class Robot extends SampleRobot {
     }
     
     public void robotInit() {
-        NIVision.IMAQdxSetAttributeU32(m_id, ATTR_VIDEO_MODE, 93);
+        NIVision.IMAQdxSetAttributeU32(session, "AcquisitionAttributes::VideoMode", 93);
     	angler.changeControlMode(CANTalon.TalonControlMode.Position);
+    	angler.configEncoderCodesPerRev(PULSE_REVS);
     	fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
     	fly2.changeControlMode(CANTalon.TalonControlMode.Speed);
     	fly1.set(0);
@@ -210,9 +212,10 @@ public class Robot extends SampleRobot {
 
             if (mechstick.getRawButton(SWITCH_BTN)){
                 if ((Timer.getFPGATimestamp() - switchCooldown) > COOLTIME){
-                    mechSwitch = ~mechSwitch; //Toggle mechswitch
-                    System.out.println("Mech switched to " + "primary" ? mechSwitch : "secondary"); 
-                    SmartDashboard.putString("Mech Mode", "Primary" ? mechSwitch : "Secondary");
+                    mechSwitch = !mechSwitch; //Toggle mechswitch
+                    String mechStr = mechSwitch ? "primary" : "secondary";
+                    System.out.println("Mech switched to " + mechStr); 
+                    SmartDashboard.putString("Mech Mode", mechStr);
                 }
             }
             if(Math.abs(mechY) > DEADZONEY)
@@ -326,5 +329,10 @@ public class Robot extends SampleRobot {
     // 			motorList[motorSwitch].set(y);
     // 		}
     // 	}
+    
+    	public void test()
+    	{
+    		System.out.println(drivestick.getAxisCount() + ":" + drivestick.getButtonCount());
+    	}
     // }
 }
