@@ -41,14 +41,38 @@ import com.ni.vision.NIVision.ImageType;
  */
 public class Robot extends SampleRobot {
 	
+
+    //CANs, PWMs, USB slots, button config
 	final int ANG_CAN  = 2, FLY2_CAN = 1, FLY1_CAN = 0;
 	final int BOGLEFT1_PWM = 0, BOGLEFT2_PWM = 1, BLEFT_PWM = 2, BRIGHT_PWM = 3, BOGRIGHT1_PWM = 4, BOGRIGHT2_PWM = 5;
 	final int JOYSTICK_USB = 0, MECHSTICK_USB = 1;
 	final int SERVO_PWM = 9;
+    final int FIRE_BTN = 0, FLYIN_BTN = 1, FLYOUT_BTN = 2, SWITCH_BTN = 3;
 	
+    //mechanical configuration and constants
 	final int FLYWHEELS_SHOOTRATE = 300, FLYWHEELS_GRABRATE = -30;
-        double pusherAnglePos = 00, pusherMinAngle = -5, pusherMaxAngle = 80, pusherAngleStep = .6;
-        
+    double pusherAnglePos = 00, pusherMinAngle = -5, pusherMaxAngle = 80, pusherAngleStep = .6;
+    double mechScaleFactor = 0.01, mechPos, mechNext;
+    double mechMinLimit = 0.05, mechMaxLimit = 0.8; //NOT REAL VALUES
+    
+    //testing parameters and cooldowns
+    int motorSwitch = 0;
+    boolean mechSwitch = true;
+    double lastTime = 0;
+    double switchCooldown = 0;
+    final double COOLTIME = .5;
+
+    //initializations
+    double mechX, mechY, x, y, z;
+   
+    //Visiion initializations
+    int session; Image frame, binaryFrame;
+
+    //Deadzones, ramprates
+    final double DEADZONEX = 0.05, DEADZONEY = 0.05, ANGLER_RAMPRATE = 3.0; //No more than a change of 3V per second
+    
+
+    //Motor and joystick initializations
 	CANTalon fly1 = new CANTalon(FLY1_CAN);
 	CANTalon fly2 = new CANTalon(FLY2_CAN);
 	CANTalon angler = new CANTalon(ANG_CAN);
@@ -63,16 +87,7 @@ public class Robot extends SampleRobot {
     Joystick drivestick = new Joystick(JOYSTICK_USB); 
     Joystick mechstick = new Joystick(MECHSTICK_USB);
     
-    ServoWrapper ballPusher = new ServoWrapper(SERVO_PWM, pusherMinAngle, pusherMaxAngle, pusherAnglePos, pusherAngleStep);
-
-    double mechX, mechY, x, y, z;
-    double mechScaleFactor = 0.01, mechPos, mechNext;
-    double mechMinLimit = 0.05, mechMaxLimit = 0.8; //NOT REAL VALUES
-	
-	int session; Image frame, binaryFrame; // Vision bois
-	
-    final double DEADZONEX = 0.05, DEADZONEY = 0.05, ANGLER_RAMPRATE = 3.0; //No more than a change of 3V per second
-    
+    ServoWrapper ballPusher = new ServoWrapper(SERVO_PWM, pusherMinAngle, pusherMaxAngle, pusherAnglePos, pusherAngleStep); 
 
     public Robot() {
         
@@ -87,6 +102,7 @@ public class Robot extends SampleRobot {
     }
     
     public void robotInit() {
+        NIVision.IMAQdxSetAttributeU32(m_id, ATTR_VIDEO_MODE, 93);
     	angler.changeControlMode(CANTalon.TalonControlMode.Position);
     	fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
     	fly2.changeControlMode(CANTalon.TalonControlMode.Speed);
@@ -159,7 +175,7 @@ public class Robot extends SampleRobot {
                 bogieLeft1.set(x + -y);
                 bogieLeft2.set(x + -y); //these two need to be reversed
                 backLeft.set(x + -y);
-                backRight.set(x + y);
+                backRight.set(x + y); //investigate these values
                 bogieRight1.set(x + y);
                 bogieRight2.set(x + y);
                 
@@ -174,37 +190,44 @@ public class Robot extends SampleRobot {
                 bogieRight2.set(0);
             }
 
+            if (mechstick.getRawButton(SWITCH_BTN)){
+                if ((Timer.getFPGATimestamp() - switchCooldown) > COOLTIME){
+                    mechSwitch = ~mechSwitch; //Toggle mechswitch
+                    System.out.println("Mech switched to " + "primary" ? mechSwitch : "secondary"); 
+                }
+            }
             if(Math.abs(mechY) > DEADZONEY)
             {
-            	mechNext = 0;
-                //angler.set we will assume it sets it to a given position between 0 and 1
-                //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
-                
-            	//ups = updates per second (based on Timer.delay(0.005))
-            	//rpm/60 / ups = how much it revolves per update
-            	
-            	/*
-            	 * int mechSign = Math.sign(mechY)
-            	 * if(angle * mechSign/)
-            	 */
-            	mechPos = angler.getEncPosition(); 
-            	mechNext = mechPos + mechScaleFactor * mechY;
-            	if(mechNext > mechMaxLimit)
-            	{
-            		mechNext = mechMaxLimit;
-            	}
-            	else if (mechNext < mechMinLimit)
-            	{
-            		mechNext = mechMinLimit;
-            	}
-            	angler.set(mechNext);                
+                if (mechSwitch){
+                	mechNext = 0;
+                    //angler.set we will assume it sets it to a given position between 0 and 1
+                    //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
+                    
+                	//ups = updates per second (based on Timer.delay(0.005))
+                	//rpm/60 / ups = how much it revolves per update
+                	
+                	/*
+                	 * int mechSign = Math.sign(mechY)
+                	 * if(angle * mechSign/)
+                	 */
+                	mechPos = angler.getEncPosition(); 
+                	mechNext = mechPos + mechScaleFactor * mechY;
+                	if(mechNext > mechMaxLimit)
+                	{
+                		mechNext = mechMaxLimit;
+                	}
+                	else if (mechNext < mechMinLimit)
+                	{
+                		mechNext = mechMinLimit;
+                	}
+                	angler.set(mechNext);      
+                }          
             }
             
-            
-            boolean flyOutButton = mechstick.getRawButton(3);
-            boolean flyInButton = mechstick.getRawButton(2);
-            boolean fireButton = mechstick.getRawButton(1);
-            
+            boolean flyOutButton = mechstick.getRawButton(FLYOUT_BTN);
+            boolean flyInButton = mechstick.getRawButton(FLYIN_BTN);
+            boolean fireButton = mechstick.getRawButton(FIRE_BTN);
+
             if(flyOutButton)
             {
             	fly1.set(FLYWHEELS_SHOOTRATE);//don't know what to set it to
@@ -233,11 +256,6 @@ public class Robot extends SampleRobot {
         }
     }
 
-    /**
-     * Runs during test mode
-     */
-    int motorSwitch = 0;
-    double lastTime = 0;
     //CANTalon[] motorList = {fly1, fly2, angler};
 //    
 //    public void test() 
