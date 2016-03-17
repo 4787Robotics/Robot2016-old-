@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.Servo;
+import edu.wpi.first.wpilibj.SpeedController;
 
 import com.ni.vision.NIVision;
 import com.ni.vision.NIVision.Image;
@@ -43,7 +44,7 @@ public class Robot extends SampleRobot {
 	final int ANG_CAN  = 2, FLY2_CAN = 1, FLY1_CAN = 0;
 	final int BOGLEFT1_PWM = 0, BOGLEFT2_PWM = 1, BLEFT_PWM = 2, BRIGHT_PWM = 3, BOGRIGHT1_PWM = 4, BOGRIGHT2_PWM = 5;
 	final int JOYSTICK_USB = 0, MECHSTICK_USB = 1;
-	final int SERVO_PWM = 6;
+	final int SERVO_PWM = 9;
 	
 	final int FLYWHEELS_SHOOTRATE = 300, FLYWHEELS_GRABRATE = -30;
         double pusherAnglePos = 00, pusherMinAngle = -5, pusherMaxAngle = 80, pusherAngleStep = .6;
@@ -59,11 +60,11 @@ public class Robot extends SampleRobot {
 	Talon bogieRight1 = new Talon(BOGRIGHT1_PWM);
 	Talon bogieRight2 = new Talon(BOGRIGHT2_PWM);
     
-        Joystick drivestick = new Joystick(JOYSTICK_USB);
-        Joystick mechstick = new Joystick(MECHSTICK_USB);
-        
-        ServoWrapper ballPusher = new ServoWrapper(SERVO_PWM, pusherMinAngle, pusherMaxAngle, pusherAnglePos, pusherAngleStep);
+    Joystick drivestick = new Joystick(JOYSTICK_USB);
+    Joystick mechstick = new Joystick(MECHSTICK_USB);
     
+    ServoWrapper ballPusher = new ServoWrapper(SERVO_PWM, pusherMinAngle, pusherMaxAngle, pusherAnglePos, pusherAngleStep);
+
     double mechX, mechY, x, y, z;
     double mechScaleFactor = 0.01, mechPos, mechNext;
     double mechMinLimit = 0.05, mechMaxLimit = 0.8; //NOT REAL VALUES
@@ -158,10 +159,10 @@ public class Robot extends SampleRobot {
 
             if(Math.abs(x) > DEADZONEX || Math.abs(y) > DEADZONEY){
 //                System.out.println("x: " + x + "  y: " + y + " z: " + z);
-                bogieLeft1.set(x + -y );
-                bogieLeft2.set(x + -y );
-                backLeft.set(x + -y);
-                backRight.set(x + y);
+                bogieLeft1.set(x + -y);
+                bogieLeft2.set(x + -y); //these two need to be reversed
+               // backLeft.set(x + -y);
+                //backRight.set(x + y);
                 bogieRight1.set(x + y);
                 bogieRight2.set(x + y);
                 
@@ -170,41 +171,39 @@ public class Robot extends SampleRobot {
             {
                 bogieLeft1.set(0);
                 bogieLeft2.set(0);
-                backLeft.set(0);
-                backRight.set(0);
+                //backLeft.set(0);
+                //backRight.set(0);
                 bogieRight1.set(0);
                 bogieRight2.set(0);
             }
 
-            if(Math.abs(mechY) > DEADZONEY)
-            {
-            	mechNext = 0;
-                //angler.set we will assume it sets it to a given position between 0 and 1
-                //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
-                
-            	//ups = updates per second (based on Timer.delay(0.005))
-            	//rpm/60 / ups = how much it revolves per update
-            	
-            	/*
-            	 * int mechSign = Math.sign(mechY)
-            	 * if(angle * mechSign/)
-            	 */
-            	mechPos = angler.getEncPosition(); 
-            	mechNext = mechPos + mechScaleFactor * mechY;
-            	if(mechNext > mechMaxLimit)
-            	{
-            		mechNext = mechMaxLimit;
-            	}
-            	else if (mechNext < mechMinLimit)
-            	{
-            		mechNext = mechMinLimit;
-            	}
-            	angler.set(mechNext);                
-            }
+//            if(Math.abs(mechY) > DEADZONEY)
+//            {
+//            	mechNext = 0;
+//                //angler.set we will assume it sets it to a given position between 0 and 1
+//                //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
+//                
+//            	//ups = updates per second (based on Timer.delay(0.005))
+//            	//rpm/60 / ups = how much it revolves per update
+//            	
+//            	/*
+//            	 * int mechSign = Math.sign(mechY)
+//            	 * if(angle * mechSign/)
+//            	 */
+//            	mechPos = angler.getEncPosition(); 
+//            	mechNext = mechPos + mechScaleFactor * mechY;
+//            	if(mechNext > mechMaxLimit)
+//            	{
+//            		mechNext = mechMaxLimit;
+//            	}
+//            	else if (mechNext < mechMinLimit)
+//            	{
+//            		mechNext = mechMinLimit;
+//            	}
+//            	angler.set(mechNext);                
+//            }
             
             
-            //buttons 2 & 3
-            //trigger = new JoystickButton(drivestick, 1);
             boolean flyOutButton = mechstick.getRawButton(3);
             boolean flyInButton = mechstick.getRawButton(2);
             boolean fireButton = mechstick.getRawButton(1);
@@ -242,8 +241,32 @@ public class Robot extends SampleRobot {
      */
     int motorSwitch = 0;
     double lastTime = 0;
-    CANTalon[] motorList = {fly1, fly2, angler};
+    //CANTalon[] motorList = {fly1, fly2, angler};
+//    
+//    public void test() 
+//    {
+//    	SmartDashboard.putNumber("Test Motor: ", motorSwitch);
+//    	while(isTest() && isEnabled()){
+//    		y = drivestick.getY();
+//    		if (drivestick.getRawButton(1))
+//    		{
+//    			if ((Timer.getFPGATimestamp() - lastTime) > .5)
+//    			{
+//    				motorList[motorSwitch].set(0);
+//    				lastTime = Timer.getFPGATimestamp();
+//    				motorSwitch = (motorSwitch + 1) % motorList.length;
+//    				System.out.println("Test Motor: " + motorSwitch);
+//    			}
+//    		}
+//    		
+//    		if(Math.abs(y) > DEADZONEY)
+//    		{
+//    			motorList[motorSwitch].set(y);
+//    		}
+//    	}
+//    }
     
+    SpeedController[] motorList = {bogieLeft1, bogieLeft2, backLeft, backRight, bogieRight1, bogieRight2};
     public void test() 
     {
     	SmartDashboard.putNumber("Test Motor: ", motorSwitch);
