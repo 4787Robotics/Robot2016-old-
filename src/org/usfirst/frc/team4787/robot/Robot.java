@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.SpeedController;
+import edu.wpi.first.wpilibj.Preferences;
 
 import com.ni.vision.NIVision;
 import com.ni.vision.NIVision.Image;
@@ -71,6 +72,13 @@ public class Robot extends SampleRobot {
     //Deadzones, ramprates
     final double DEADZONEX = 0.05, DEADZONEY = 0.05, ANGLER_RAMPRATE = 3.0; //No more than a change of 3V per second
     
+    //PID values for angler and flywheels
+    double flyP = 0.05;
+    double flyI = 0;
+    double flyD = 0;
+    double angP = 0.05;
+    double angI = 0;
+    double angD = 0;
 
     //Motor and joystick initializations
 	CANTalon fly1 = new CANTalon(FLY1_CAN);
@@ -89,15 +97,17 @@ public class Robot extends SampleRobot {
     
     ServoWrapper ballPusher = new ServoWrapper(SERVO_PWM, pusherMinAngle, pusherMaxAngle, pusherAnglePos, pusherAngleStep); 
 
+    Preferences prefs;
+
     public Robot() {
         
         // Vision Dashboard code
-    	//frame = NIVision.imaqCreateImage(ImageType.IMAGE_RGB, 0);
-		//binaryFrame = NIVision.imaqCreateImage(ImageType.IMAGE_U8, 0);
+    	frame = NIVision.imaqCreateImage(ImageType.IMAGE_RGB, 0);
+		binaryFrame = NIVision.imaqCreateImage(ImageType.IMAGE_U8, 0);
 		
     	// The camera name (ex "cam0") can be found through the roborio web interface
-        //session = NIVision.IMAQdxOpenCamera("cam0", NIVision.IMAQdxCameraControlMode.CameraControlModeController);
-        //NIVision.IMAQdxConfigureGrab(session);
+        session = NIVision.IMAQdxOpenCamera("cam0", NIVision.IMAQdxCameraControlMode.CameraControlModeController);
+        NIVision.IMAQdxConfigureGrab(session);
         
     }
     
@@ -112,10 +122,18 @@ public class Robot extends SampleRobot {
     	fly1.setFeedbackDevice(FeedbackDevice.QuadEncoder);
     	fly2.setFeedbackDevice(FeedbackDevice.QuadEncoder);
     	angler.setFeedbackDevice(FeedbackDevice.QuadEncoder);
-    	
+
+        flyP = prefs.getDouble("Flywheels P", flyP);
+        flyI = prefs.getDouble("Flywheels I", flyI);
+        flyD = prefs.getDouble("Flywheels D", flyD);
+        angP = prefs.getDouble("Angler P", angP);
+        angI = prefs.getDouble("Angler I", angI);
+        angD = prefs.getDouble("Angler D", angD);
+
     	FeedbackDeviceStatus status1 = fly1.isSensorPresent(FeedbackDevice.QuadEncoder);
     	FeedbackDeviceStatus status2 = fly2.isSensorPresent(FeedbackDevice.QuadEncoder);
     	FeedbackDeviceStatus status3 = angler.isSensorPresent(FeedbackDevice.QuadEncoder);
+
     	switch(status1)
     	{
     		case FeedbackStatusPresent:
@@ -158,7 +176,7 @@ public class Robot extends SampleRobot {
      * Runs the motors with arcade steering.
      */
     public void operatorControl() {
-    	//NIVision.IMAQdxStartAcquisition(session);
+    	NIVision.IMAQdxStartAcquisition(session);
         
         while (isOperatorControl() && isEnabled()) {
         	
@@ -194,11 +212,12 @@ public class Robot extends SampleRobot {
                 if ((Timer.getFPGATimestamp() - switchCooldown) > COOLTIME){
                     mechSwitch = ~mechSwitch; //Toggle mechswitch
                     System.out.println("Mech switched to " + "primary" ? mechSwitch : "secondary"); 
+                    SmartDashboard.putString("Mech Mode", "Primary" ? mechSwitch : "Secondary");
                 }
             }
             if(Math.abs(mechY) > DEADZONEY)
             {
-                if (mechSwitch){
+                if (mechSwitch){ //primary mech
                 	mechNext = 0;
                     //angler.set we will assume it sets it to a given position between 0 and 1
                     //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
@@ -221,7 +240,11 @@ public class Robot extends SampleRobot {
                 		mechNext = mechMinLimit;
                 	}
                 	angler.set(mechNext);      
-                }          
+                }
+                else
+                {
+                    //Secondary mech code 
+                }   
             }
             
             boolean flyOutButton = mechstick.getRawButton(FLYOUT_BTN);
@@ -281,27 +304,27 @@ public class Robot extends SampleRobot {
 //    	}
 //    }
     
-    SpeedController[] motorList = {bogieLeft1, bogieLeft2, backLeft, backRight, bogieRight1, bogieRight2};
-    public void test() 
-    {
-    	SmartDashboard.putNumber("Test Motor: ", motorSwitch);
-    	while(isTest() && isEnabled()){
-    		y = drivestick.getY();
-    		if (drivestick.getRawButton(1))
-    		{
-    			if ((Timer.getFPGATimestamp() - lastTime) > .5)
-    			{
-    				motorList[motorSwitch].set(0);
-    				lastTime = Timer.getFPGATimestamp();
-    				motorSwitch = (motorSwitch + 1) % motorList.length;
-    				System.out.println("Test Motor: " + motorSwitch);
-    			}
-    		}
+    // SpeedController[] motorList = {bogieLeft1, bogieLeft2, backLeft, backRight, bogieRight1, bogieRight2};
+    // public void test() 
+    // {
+    // 	while(isTest() && isEnabled()){
+    //         SmartDashboard.putNumber("Test Motor: ", motorSwitch);
+    // 		y = drivestick.getY();
+    // 		if (drivestick.getRawButton(1))
+    // 		{
+    // 			if ((Timer.getFPGATimestamp() - lastTime) > .5)
+    // 			{
+    // 				motorList[motorSwitch].set(0);
+    // 				lastTime = Timer.getFPGATimestamp();
+    // 				motorSwitch = (motorSwitch + 1) % motorList.length;
+    // 				System.out.println("Test Motor: " + motorSwitch);
+    // 			}
+    // 		}
     		
-    		if(Math.abs(y) > DEADZONEY)
-    		{
-    			motorList[motorSwitch].set(y);
-    		}
-    	}
-    }
+    // 		if(Math.abs(y) > DEADZONEY)
+    // 		{
+    // 			motorList[motorSwitch].set(y);
+    // 		}
+    // 	}
+    // }
 }
