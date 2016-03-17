@@ -60,7 +60,7 @@ public class Robot extends SampleRobot {
 	Talon bogieRight1 = new Talon(BOGRIGHT1_PWM);
 	Talon bogieRight2 = new Talon(BOGRIGHT2_PWM);
     
-    Joystick drivestick = new Joystick(JOYSTICK_USB);
+    Joystick drivestick = new Joystick(JOYSTICK_USB); 
     Joystick mechstick = new Joystick(MECHSTICK_USB);
     
     ServoWrapper ballPusher = new ServoWrapper(SERVO_PWM, pusherMinAngle, pusherMaxAngle, pusherAnglePos, pusherAngleStep);
@@ -73,10 +73,8 @@ public class Robot extends SampleRobot {
 	
     final double DEADZONEX = 0.05, DEADZONEY = 0.05, ANGLER_RAMPRATE = 3.0; //No more than a change of 3V per second
     
-    Joystick stick; 
 
     public Robot() {
-        stick = new Joystick(0);
         
         // Vision Dashboard code
     	//frame = NIVision.imaqCreateImage(ImageType.IMAGE_RGB, 0);
@@ -158,11 +156,10 @@ public class Robot extends SampleRobot {
             z = mechstick.getZ();
 
             if(Math.abs(x) > DEADZONEX || Math.abs(y) > DEADZONEY){
-//                System.out.println("x: " + x + "  y: " + y + " z: " + z);
                 bogieLeft1.set(x + -y);
                 bogieLeft2.set(x + -y); //these two need to be reversed
-               // backLeft.set(x + -y);
-                //backRight.set(x + y);
+                backLeft.set(x + -y);
+                backRight.set(x + y);
                 bogieRight1.set(x + y);
                 bogieRight2.set(x + y);
                 
@@ -171,37 +168,37 @@ public class Robot extends SampleRobot {
             {
                 bogieLeft1.set(0);
                 bogieLeft2.set(0);
-                //backLeft.set(0);
-                //backRight.set(0);
+                backLeft.set(0);
+                backRight.set(0);
                 bogieRight1.set(0);
                 bogieRight2.set(0);
             }
 
-//            if(Math.abs(mechY) > DEADZONEY)
-//            {
-//            	mechNext = 0;
-//                //angler.set we will assume it sets it to a given position between 0 and 1
-//                //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
-//                
-//            	//ups = updates per second (based on Timer.delay(0.005))
-//            	//rpm/60 / ups = how much it revolves per update
-//            	
-//            	/*
-//            	 * int mechSign = Math.sign(mechY)
-//            	 * if(angle * mechSign/)
-//            	 */
-//            	mechPos = angler.getEncPosition(); 
-//            	mechNext = mechPos + mechScaleFactor * mechY;
-//            	if(mechNext > mechMaxLimit)
-//            	{
-//            		mechNext = mechMaxLimit;
-//            	}
-//            	else if (mechNext < mechMinLimit)
-//            	{
-//            		mechNext = mechMinLimit;
-//            	}
-//            	angler.set(mechNext);                
-//            }
+            if(Math.abs(mechY) > DEADZONEY)
+            {
+            	mechNext = 0;
+                //angler.set we will assume it sets it to a given position between 0 and 1
+                //y axis for angler, 2 for pulling in, 3 for out, trigger for shoot
+                
+            	//ups = updates per second (based on Timer.delay(0.005))
+            	//rpm/60 / ups = how much it revolves per update
+            	
+            	/*
+            	 * int mechSign = Math.sign(mechY)
+            	 * if(angle * mechSign/)
+            	 */
+            	mechPos = angler.getEncPosition(); 
+            	mechNext = mechPos + mechScaleFactor * mechY;
+            	if(mechNext > mechMaxLimit)
+            	{
+            		mechNext = mechMaxLimit;
+            	}
+            	else if (mechNext < mechMinLimit)
+            	{
+            		mechNext = mechMinLimit;
+            	}
+            	angler.set(mechNext);                
+            }
             
             
             boolean flyOutButton = mechstick.getRawButton(3);
