@@ -44,7 +44,7 @@ public class Robot extends SampleRobot {
 	
 
     //CANs, PWMs, USB slots, button config
-	final int ANG_CAN  = 2, FLY2_CAN = 1, FLY1_CAN = 0;
+	final int ANG_CAN  = 1, FLY2_CAN = 2, FLY1_CAN = 0;
 	final int BOGLEFT1_PWM = 0, BOGLEFT2_PWM = 1, BLEFT_PWM = 2, BRIGHT_PWM = 3, BOGRIGHT1_PWM = 4, BOGRIGHT2_PWM = 5;
 	final int JOYSTICK_USB = 0, MECHSTICK_USB = 1;
 	final int SERVO_PWM = 9;
@@ -67,17 +67,17 @@ public class Robot extends SampleRobot {
     //initializations
     double mechX, mechY, x, y, z;
    
-    //Visiion initializations
-    int session; Image frame, binaryFrame;
+    //Vision initializations
+    //int session; Image frame, binaryFrame;
 
     //Deadzones, ramprates
     final double DEADZONEX = 0.05, DEADZONEY = 0.05, ANGLER_RAMPRATE = 3.0; //No more than a change of 3V per second
     
     //PID values for angler and flywheels
-    double flyP = 0.05;
+    double flyP = 2;
     double flyI = 0;
     double flyD = 0;
-    double angP = 0.05;
+    double angP = 2;
     double angI = 0;
     double angD = 0;
 
@@ -103,17 +103,17 @@ public class Robot extends SampleRobot {
     public Robot() {
         
         // Vision Dashboard code
-    	frame = NIVision.imaqCreateImage(ImageType.IMAGE_RGB, 0);
-		binaryFrame = NIVision.imaqCreateImage(ImageType.IMAGE_U8, 0);
-		
-    	// The camera name (ex "cam0") can be found through the roborio web interface
-        session = NIVision.IMAQdxOpenCamera("cam0", NIVision.IMAQdxCameraControlMode.CameraControlModeController);
-        NIVision.IMAQdxConfigureGrab(session);
+//    	frame = NIVision.imaqCreateImage(ImageType.IMAGE_RGB, 0);
+//		binaryFrame = NIVision.imaqCreateImage(ImageType.IMAGE_U8, 0);
+//		
+//    	// The camera name (ex "cam0") can be found through the roborio web interface
+//        session = NIVision.IMAQdxOpenCamera("cam0", NIVision.IMAQdxCameraControlMode.CameraControlModeController);
+//        NIVision.IMAQdxConfigureGrab(session);
         
     }
     
     public void robotInit() {
-        NIVision.IMAQdxSetAttributeU32(session, "AcquisitionAttributes::VideoMode", 93);
+        //NIVision.IMAQdxSetAttributeU32(session, "AcquisitionAttributes::VideoMode", 93);
     	angler.changeControlMode(CANTalon.TalonControlMode.Position);
     	angler.configEncoderCodesPerRev(PULSE_REVS);
     	fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
@@ -125,12 +125,12 @@ public class Robot extends SampleRobot {
     	fly2.setFeedbackDevice(FeedbackDevice.QuadEncoder);
     	angler.setFeedbackDevice(FeedbackDevice.QuadEncoder);
 
-        flyP = prefs.getDouble("Flywheels P", flyP);
-        flyI = prefs.getDouble("Flywheels I", flyI);
-        flyD = prefs.getDouble("Flywheels D", flyD);
-        angP = prefs.getDouble("Angler P", angP);
-        angI = prefs.getDouble("Angler I", angI);
-        angD = prefs.getDouble("Angler D", angD);
+//        flyP = prefs.getDouble("Flywheels P", flyP);
+//        flyI = prefs.getDouble("Flywheels I", flyI);
+//        flyD = prefs.getDouble("Flywheels D", flyD);
+//        angP = prefs.getDouble("Angler P", angP);
+//        angI = prefs.getDouble("Angler I", angI);
+//        angD = prefs.getDouble("Angler D", angD);
 
     	FeedbackDeviceStatus status1 = fly1.isSensorPresent(FeedbackDevice.QuadEncoder);
     	FeedbackDeviceStatus status2 = fly2.isSensorPresent(FeedbackDevice.QuadEncoder);
@@ -178,7 +178,7 @@ public class Robot extends SampleRobot {
      * Runs the motors with arcade steering.
      */
     public void operatorControl() {
-    	NIVision.IMAQdxStartAcquisition(session);
+    	//NIVision.IMAQdxStartAcquisition(session);
         
         while (isOperatorControl() && isEnabled()) {
         	
@@ -194,7 +194,7 @@ public class Robot extends SampleRobot {
             if(Math.abs(x) > DEADZONEX || Math.abs(y) > DEADZONEY){
                 bogieLeft1.set(x + -y);
                 bogieLeft2.set(x + -y); //these two need to be reversed
-                backLeft.set(x + -y);
+                backLeft.set(x - y);
                 backRight.set(x + y); //investigate these values
                 bogieRight1.set(x + y);
                 bogieRight2.set(x + y);
@@ -260,7 +260,7 @@ public class Robot extends SampleRobot {
             	fly2.set(-FLYWHEELS_SHOOTRATE);
             	if (fireButton)
             	{
-            		ballPusher.stepFwd();
+            		//ballPusher.stepFwd();
             	}
             }
 
@@ -268,71 +268,85 @@ public class Robot extends SampleRobot {
             {
             	fly1.set(FLYWHEELS_GRABRATE);//not sure which should be + and -
             	fly2.set(-FLYWHEELS_GRABRATE);
-            	ballPusher.stepBwd();
+            	//ballPusher.stepBwd();
             }
             
             else
             {
             	fly1.set(0);
             	fly2.set(0);
-            	ballPusher.stepBwd();
+            	//ballPusher.stepBwd();
             }
             
             Timer.delay(0.005);		// wait for a motor update time
         }
     }
 
-    //CANTalon[] motorList = {fly1, fly2, angler};
-//    
+    CANTalon[] motorList = {fly1, fly2, angler};
+    
+    
+    
+    public void test() 
+    {
+    	SmartDashboard.putNumber("Test Motor: ", motorSwitch);
+    	for (CANTalon m : motorList)
+        {
+        	m.changeControlMode(CANTalon.TalonControlMode.Current);
+        }
+    	while(isTest() && isEnabled()){
+    		y = drivestick.getY();
+    		if (drivestick.getRawButton(1))
+    		{
+    			if ((Timer.getFPGATimestamp() - lastTime) > .5)
+    			{
+    				motorList[motorSwitch].set(0);
+    				lastTime = Timer.getFPGATimestamp();
+    				motorSwitch = (motorSwitch + 1) % motorList.length;
+    				System.out.println("Test Motor: " + motorSwitch);
+    			}
+    		}
+    		
+    		if(Math.abs(y) > DEADZONEY)
+    		{
+    			motorList[motorSwitch].set(y);
+    		}
+    		else
+    		{
+     			motorList[motorSwitch].set(0);
+     		}
+    	}
+    }
+    
+//    SpeedController[] motorList = {bogieLeft1, bogieLeft2, backLeft, backRight, bogieRight1, bogieRight2};
 //    public void test() 
 //    {
+//    while(isTest() && isEnabled()){
+//    	//System.out.println(drivestick.getAxisCount() + ":" + drivestick.getButtonCount());
 //    	SmartDashboard.putNumber("Test Motor: ", motorSwitch);
-//    	while(isTest() && isEnabled()){
-//    		y = drivestick.getY();
-//    		if (drivestick.getRawButton(1))
-//    		{
-//    			if ((Timer.getFPGATimestamp() - lastTime) > .5)
-//    			{
-//    				motorList[motorSwitch].set(0);
-//    				lastTime = Timer.getFPGATimestamp();
-//    				motorSwitch = (motorSwitch + 1) % motorList.length;
-//    				System.out.println("Test Motor: " + motorSwitch);
-//    			}
-//    		}
+//    	y = drivestick.getY();
+//     		if (drivestick.getRawButton(1))
+//     		{
+//     			if ((Timer.getFPGATimestamp() - lastTime) > .5)
+//     			{
+//     				motorList[motorSwitch].set(0);
+//     				lastTime = Timer.getFPGATimestamp();
+//     				motorSwitch = (motorSwitch + 1) % motorList.length;
+//     				System.out.println("Test Motor: " + motorSwitch);
+//     			}
+//     		}
 //    		
-//    		if(Math.abs(y) > DEADZONEY)
-//    		{
-//    			motorList[motorSwitch].set(y);
-//    		}
-//    	}
+//     		if(Math.abs(y) > DEADZONEY)
+//     		{
+//     			motorList[motorSwitch].set(y);
+//     		}
+//     		else
+//     		{
+//     			motorList[motorSwitch].set(0);
+//     		}
+//     	}
 //    }
-    
-    // SpeedController[] motorList = {bogieLeft1, bogieLeft2, backLeft, backRight, bogieRight1, bogieRight2};
-    // public void test() 
-    // {
-    // 	while(isTest() && isEnabled()){
-    //         SmartDashboard.putNumber("Test Motor: ", motorSwitch);
-    // 		y = drivestick.getY();
-    // 		if (drivestick.getRawButton(1))
-    // 		{
-    // 			if ((Timer.getFPGATimestamp() - lastTime) > .5)
-    // 			{
-    // 				motorList[motorSwitch].set(0);
-    // 				lastTime = Timer.getFPGATimestamp();
-    // 				motorSwitch = (motorSwitch + 1) % motorList.length;
-    // 				System.out.println("Test Motor: " + motorSwitch);
-    // 			}
-    // 		}
-    		
-    // 		if(Math.abs(y) > DEADZONEY)
-    // 		{
-    // 			motorList[motorSwitch].set(y);
-    // 		}
-    // 	}
-    
-    	public void test()
-    	{
-    		System.out.println(drivestick.getAxisCount() + ":" + drivestick.getButtonCount());
-    	}
-    // }
+//    public void test()
+//    {
+//    	angler.set(.5);  	
+//    }
 }
