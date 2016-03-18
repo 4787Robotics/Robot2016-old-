@@ -179,6 +179,18 @@ public class Robot extends SampleRobot {
      */
     public void operatorControl() {
     	//NIVision.IMAQdxStartAcquisition(session);
+    	angler.changeControlMode(CANTalon.TalonControlMode.Position);
+    	fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
+    	fly2.changeControlMode(CANTalon.TalonControlMode.Speed);
+    	fly1.setPID(flyP,flyI,flyD);
+    	fly1.setCloseLoopRampRate(0.0);
+    	fly1.setIZone(0);
+    	fly2.setPID(flyP,flyI,flyD);
+    	fly2.setCloseLoopRampRate(0.0);
+    	fly2.setIZone(0);
+    	angler.setPID(angP,angI,angD);
+    	angler.setIZone(0);
+    	angler.setCloseLoopRampRate(0.0);
         
         while (isOperatorControl() && isEnabled()) {
         	
