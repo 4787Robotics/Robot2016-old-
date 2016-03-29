@@ -48,7 +48,7 @@ public class Robot extends SampleRobot {
 	final int BOGLEFT1_PWM = 0, BOGLEFT2_PWM = 1, BLEFT_PWM = 2, BRIGHT_PWM = 3, BOGRIGHT1_PWM = 4, BOGRIGHT2_PWM = 5;
 	final int JOYSTICK_USB = 0, MECHSTICK_USB = 1;
 	final int MECHSERVO_PWM = 9, CAMSERVO_PWM = 6;
-    final int FIRE_BTN = 5, FLYIN_BTN = 2, FLYOUT_BTN = 3, SWITCH_BTN = 4, WHEELIE_BTN = 1, RLEFT_BTN = 11, RRIGHT_BTN = 12;
+    final int FIRE_BTN = 5, FLYIN_BTN = 2, FLYOUT_BTN = 3, SWITCH_BTN = 4, WHEELIE_BTN = 1, RLEFT_BTN = 7, RRIGHT_BTN = 8;
 	
     //mechanical configuration and constants
 	final int FLYWHEELS_SHOOTRATE = 300, FLYWHEELS_GRABRATE = -30;
@@ -167,25 +167,25 @@ public class Robot extends SampleRobot {
     			//terminate robot? or just a warning?
     		case FeedbackStatusUnknown:
     			System.out.println("Angler sensor status unknown");
-    	
     	}
     }
 
     public void autonomous() {
+    	/*
     	 bogieLeft1.set(.6);
          bogieLeft2.set(.6); //these two need to be reversed
          backLeft.set(.6);
          backRight.set(-.6); //investigate these values
          bogieRight1.set(-.6);
          bogieRight2.set(-.6);
-         Timer.delay(3);
+         Timer.delay(4);
          bogieLeft1.set(0);
          bogieLeft2.set(0); //these two need to be reversed
          backLeft.set(0);
          backRight.set(0); //investigate these values
          bogieRight1.set(0);
          bogieRight2.set(0);
-         
+         TO ENABLE AUTO, DELETE THIS LINE AND THE '/*' ABOVE           */
     }
 
     /**
@@ -225,7 +225,7 @@ public class Robot extends SampleRobot {
 	                bogieLeft1.set(x + -y);
 	                bogieLeft2.set(x + -y); //these two need to be reversed
 	                bogieRight1.set(x + y);
-	                bogieRight2.set(x + y);
+	                bogieRight2.set(x + y); 
             	}
             	else
             	{
