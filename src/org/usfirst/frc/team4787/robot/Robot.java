@@ -174,7 +174,7 @@ public class Robot extends SampleRobot {
 		flyP = prefs.getDouble("Flywheels P", flyP);
 		flyI = prefs.getDouble("Flywheels I", flyI);
 		flyD = prefs.getDouble("Flywheels D", flyD);
-		trim = prefs.getDouble("Trim", 0); // defaults to 0 trim
+		trim = prefs.getDouble("Trim", 0); // defaults to 0 trim. -1 is all power to left, 1 is all power to right
 		autoPower = prefs.getDouble("Autonomous Power to Wheels", 0); // defaults
 																		// to NO
 																		// auto
@@ -225,11 +225,13 @@ public class Robot extends SampleRobot {
 			z = drivestick.getZ();
 
 			if (Math.abs(x) > DEADZONEX || Math.abs(y) > DEADZONEY) {
+				trimRight = Math.signum(trim) > 0 ? 1-trim : 1
+				trimLeft = Math.signum(trim) < 0 ? 1-Math.abs(trim) : 1
 				if (!drivestick.getRawButton(WHEELIE_BTN)) {
-					bogieLeft1.set(x + -y);
-					bogieLeft2.set(x + -y); // these two need to be reversed
-					bogieRight1.set(x + y);
-					bogieRight2.set(x + y);
+					bogieLeft1.set(trimLeft*(x + -y));
+					bogieLeft2.set(trimLeft*(x + -y)); // these two need to be reversed
+					bogieRight1.set(trimRight*(x + y));
+					bogieRight2.set(trimRight*(x + y));
 				} else {
 					bogieLeft1.set(0);
 					bogieLeft2.set(0);
@@ -237,12 +239,12 @@ public class Robot extends SampleRobot {
 					bogieRight2.set(0);
 				}
 				if (!rearLeftDisable) {
-					backLeft.set(x - y);
+					backLeft.set(trimLeft*(x - y));
 				} else {
 					backLeft.set(0);
 				}
 				if (!rearRightDisable) {
-					backRight.set(x + y);
+					backRight.set(trimRight*(x + y);
 				} else {
 					backRight.set(0);
 				}
