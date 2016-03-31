@@ -284,13 +284,17 @@ public class Robot extends SampleRobot {
 				if (fireButton) {
 					ballPusher.stepFwd();
 				}
+				serial.writeString("F#FFFFFF:#" + allianceColor +":.4");
 			} else if (flyInButton) {
 				fly1.set(FLYWHEELS_GRABRATE);// not sure which should be + and -
 				fly2.set(-FLYWHEELS_GRABRATE);
 				ballPusher.stepBwd();
+				serial.writeString("F#FFFFFF:#" + allianceColor +":.4");
 			}
 
 			else {
+				//while not shooting
+				serial.writeString("V#" + allianceColor);
 				fly1.set(0);
 				fly2.set(0);
 				ballPusher.stepBwd();
