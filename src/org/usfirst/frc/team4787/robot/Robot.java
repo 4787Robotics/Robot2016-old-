@@ -22,16 +22,15 @@ import com.ni.vision.NIVision.ImageType;
 public class Robot extends SampleRobot {
 
 	// CANs, PWMs, USB slots, button config
-	final int FLY2_CAN = 2, FLY1_CAN = 0;
+	final int FLY2_CAN = 1, FLY1_CAN = 0;
 	final int BOGLEFT1_PWM = 0, BOGLEFT2_PWM = 1, BLEFT_PWM = 2,
 			BRIGHT_PWM = 3, BOGRIGHT1_PWM = 4, BOGRIGHT2_PWM = 5;
-	final int JOYSTICK_USB = 0, MECHSTICK_USB = 1;
-	final int MECHSERVO_PWM = 9, CAMSERVO_PWM = 6;
-	final int FIRE_BTN = 5, FLYIN_BTN = 2, FLYOUT_BTN = 3, 
+	final int JOYSTICK_USB = 0;
+	final int MECHSERVO_PWM = 9;
+	final int FIRE_BTN = 6, FLYIN_BTN = 3, FLYOUT_BTN = 5, 
 			WHEELIE_BTN = 1, RLEFT_BTN = 7, RRIGHT_BTN = 8;
 
 	// mechanical configuration and constants
-	final int FLYWHEELS_SHOOTRATE = 300, FLYWHEELS_GRABRATE = -30;
 	double pusherAnglePos = 00, pusherMinAngle = -5, pusherMaxAngle = 80,
 			pusherAngleStep = .6;
 	double mechScaleFactor = 0.01, mechPos, mechNext;
@@ -85,11 +84,9 @@ public class Robot extends SampleRobot {
 	 */
 
 	Joystick drivestick = new Joystick(JOYSTICK_USB);
-	Joystick mechstick = new Joystick(MECHSTICK_USB);
 
-	ServoWrapper ballPusher = new ServoWrapper(MECHSERVO_PWM, pusherMinAngle,
-			pusherMaxAngle, pusherAnglePos, pusherAngleStep);
-	Servo camServo = new Servo(CAMSERVO_PWM);
+	//ServoWrapper ballPusher = new ServoWrapper(MECHSERVO_PWM, pusherMinAngle,
+			//pusherMaxAngle, pusherAnglePos, pusherAngleStep);
 	Preferences prefs;
 
 	public Robot() {
@@ -112,12 +109,8 @@ public class Robot extends SampleRobot {
 		System.out.println("Tried setting color to white.");
 		//NIVision.IMAQdxSetAttributeU32(session,
 				//"AcquisitionAttributes::VideoMode", 93);
-		fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
-		fly2.changeControlMode(CANTalon.TalonControlMode.Speed);
 		fly1.set(0);
 		fly2.set(0);
-		fly1.setFeedbackDevice(FeedbackDevice.QuadEncoder);
-		fly2.setFeedbackDevice(FeedbackDevice.QuadEncoder);
 
 		//sensorCheck();
 		//while (!isEnabled()) {
@@ -202,7 +195,6 @@ public class Robot extends SampleRobot {
 		allianceColor = alliance ? "FF0000" : "0000FF";
 		//serial.writeString("V#" + allianceColor);
 		NIVision.IMAQdxStartAcquisition(session);
-		initializeMechanism();
 
 		while (isOperatorControl() && isEnabled()) {
 
@@ -254,12 +246,12 @@ public class Robot extends SampleRobot {
 
 
 
-			if (mechstick.getRawButton(RLEFT_BTN)) { // replace magic number
+			if (drivestick.getRawButton(RLEFT_BTN)) { // replace magic number
 				if ((Timer.getFPGATimestamp() - rearLeftCooldown) > COOLTIME) {
 					rearLeftDisable = !rearLeftDisable;
 				}
 			}
-			if (mechstick.getRawButton(RRIGHT_BTN)) { // replace magic number
+			if (drivestick.getRawButton(RRIGHT_BTN)) { // replace magic number
 				if ((Timer.getFPGATimestamp() - rearRightCooldown) > COOLTIME) {
 					rearRightDisable = !rearRightDisable;
 				}
@@ -268,21 +260,23 @@ public class Robot extends SampleRobot {
 			//camServo.setAngle(z * 90 + 180);
 			
 
-			boolean flyOutButton = mechstick.getRawButton(FLYOUT_BTN);
-			boolean flyInButton = mechstick.getRawButton(FLYIN_BTN);
-			boolean fireButton = mechstick.getRawButton(FIRE_BTN);
+			boolean flyOutButton = drivestick.getRawButton(FLYOUT_BTN);
+			boolean flyInButton = drivestick.getRawButton(FLYIN_BTN);
+			boolean fireButton = drivestick.getRawButton(FIRE_BTN);
 
 			if (flyOutButton) {
-				fly1.set(FLYWHEELS_SHOOTRATE);// don't know what to set it to
-				fly2.set(-FLYWHEELS_SHOOTRATE);
+				System.out.println("Fly out");
+				fly1.set(-.5);// don't know what to set it to
+				fly2.set(.5);
 				if (fireButton) {
-					ballPusher.stepFwd();
+					//ballPusher.stepFwd();
 				}
 				//serial.writeString("F#FFFFFF:#" + allianceColor +":.4");
 			} else if (flyInButton) {
-				fly1.set(FLYWHEELS_GRABRATE);// not sure which should be + and -
-				fly2.set(-FLYWHEELS_GRABRATE);
-				ballPusher.stepBwd();
+				System.out.println("Fly in");
+				fly1.set(.3);// not sure which should be + and -
+				fly2.set(-.3);
+				//ballPusher.stepBwd();
 				//serial.writeString("F#FFFFFF:#" + allianceColor +":.4");
 			}
 
@@ -291,29 +285,12 @@ public class Robot extends SampleRobot {
 				//serial.writeString("V#" + allianceColor);
 				fly1.set(0);
 				fly2.set(0);
-				ballPusher.stepBwd();
+				//ballPusher.stepBwd();
 			}
 
 			Timer.delay(0.005); // wait for a motor update time
 		}
 	}
-
-	/*
-	 * This is run as teleop initializes. Some of this stuff is done in
-	 * robotInit but it's done redundantly so as to apply changes to the PID
-	 * constants as well as the control modes.
-	 */
-	private void initializeMechanism() {
-		fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
-		fly2.changeControlMode(CANTalon.TalonControlMode.Speed);
-		fly1.setPID(flyP, flyI, flyD);
-		fly1.setCloseLoopRampRate(0.0);
-		fly1.setIZone(0);
-		fly2.setPID(flyP, flyI, flyD);
-		fly2.setCloseLoopRampRate(0.0);
-		fly2.setIZone(0);
-	}
-
 	
 
 	SpeedController[] motorList = { bogieLeft1, bogieLeft2, backLeft,
