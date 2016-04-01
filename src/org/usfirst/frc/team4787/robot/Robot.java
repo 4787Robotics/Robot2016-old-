@@ -47,7 +47,7 @@ public class Robot extends SampleRobot {
 	boolean rearLeftDisable = false, rearRightDisable = false;
 
 	// initializations
-	double mechX, mechY, x, y, z, trim, autoPower, autoTime;
+	double mechX, mechY, x, y, z, trim, autoPower, autoTime, trimRight, trimLeft;
 	boolean alliance; // true = red, false = blue
 	String allianceColor;
 
@@ -225,8 +225,8 @@ public class Robot extends SampleRobot {
 			z = drivestick.getZ();
 
 			if (Math.abs(x) > DEADZONEX || Math.abs(y) > DEADZONEY) {
-				trimRight = Math.signum(trim) > 0 ? 1-trim : 1
-				trimLeft = Math.signum(trim) < 0 ? 1-Math.abs(trim) : 1
+				trimRight = Math.signum(trim) > 0 ? 1-trim : 1;
+				trimLeft = Math.signum(trim) < 0 ? 1-Math.abs(trim) : 1;
 				if (!drivestick.getRawButton(WHEELIE_BTN)) {
 					bogieLeft1.set(trimLeft*(x + -y));
 					bogieLeft2.set(trimLeft*(x + -y)); // these two need to be reversed
@@ -244,7 +244,7 @@ public class Robot extends SampleRobot {
 					backLeft.set(0);
 				}
 				if (!rearRightDisable) {
-					backRight.set(trimRight*(x + y);
+					backRight.set(trimRight*(x + y));
 				} else {
 					backRight.set(0);
 				}
