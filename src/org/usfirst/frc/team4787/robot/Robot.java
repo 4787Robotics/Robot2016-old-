@@ -22,7 +22,7 @@ import com.ni.vision.NIVision.ImageType;
 public class Robot extends SampleRobot {
 
 	// CANs, PWMs, USB slots, button config
-	final int ANG_CAN = 1, FLY2_CAN = 2, FLY1_CAN = 0;
+	final int FLY2_CAN = 2, FLY1_CAN = 0;
 	final int BOGLEFT1_PWM = 0, BOGLEFT2_PWM = 1, BLEFT_PWM = 2,
 			BRIGHT_PWM = 3, BOGRIGHT1_PWM = 4, BOGRIGHT2_PWM = 5;
 	final int JOYSTICK_USB = 0, MECHSTICK_USB = 1;
@@ -62,22 +62,18 @@ public class Robot extends SampleRobot {
 	double flyP = 2;
 	double flyI = 0;
 	double flyD = 0;
-	double angP = 0;
-	double angI = 0;
-	double angD = 0;
 
 	// Motor and joystick initializations
 	CANTalon fly1 = new CANTalon(FLY1_CAN);
 	CANTalon fly2 = new CANTalon(FLY2_CAN);
-	CANTalon angler = new CANTalon(ANG_CAN);
 
 	Talon bogieLeft1 = new Talon(BOGLEFT1_PWM);
 	Talon bogieLeft2 = new Talon(BOGLEFT2_PWM);
-	Victor backLeft = new Victor(BLEFT_PWM);
+	Talon backLeft = new Talon(BLEFT_PWM);
 	Victor backRight = new Victor(BRIGHT_PWM);
 	Talon bogieRight1 = new Talon(BOGRIGHT1_PWM);
 	Talon bogieRight2 = new Talon(BOGRIGHT2_PWM);
-	SerialPort serial = new SerialPort(19200, SerialPort.Port.kOnboard); // onboard
+	//SerialPort serial = new SerialPort(19200, SerialPort.Port.kOnboard);
 																			// serial
 	/*
 	 * HOW TO USE: write newline terminated strings with particular format:
@@ -111,20 +107,22 @@ public class Robot extends SampleRobot {
 	}
 
 	public void robotInit() {
-		NIVision.IMAQdxSetAttributeU32(session,
-				"AcquisitionAttributes::VideoMode", 93);
-		angler.changeControlMode(CANTalon.TalonControlMode.Position);
-		angler.configEncoderCodesPerRev(PULSE_REVS);
+		//serial.disableTermination();
+		//serial.writeString("V#FFFFFF\n");
+		System.out.println("Tried setting color to white.");
+		//NIVision.IMAQdxSetAttributeU32(session,
+				//"AcquisitionAttributes::VideoMode", 93);
 		fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
 		fly2.changeControlMode(CANTalon.TalonControlMode.Speed);
 		fly1.set(0);
 		fly2.set(0);
-		angler.setVoltageRampRate(ANGLER_RAMPRATE);
 		fly1.setFeedbackDevice(FeedbackDevice.QuadEncoder);
 		fly2.setFeedbackDevice(FeedbackDevice.QuadEncoder);
-		angler.setFeedbackDevice(FeedbackDevice.QuadEncoder);
 
-		sensorCheck();
+		//sensorCheck();
+		//while (!isEnabled()) {
+			//serial.writeString("V#FFFFFF\n");
+		//}
 	}
 
 	/**
@@ -134,8 +132,6 @@ public class Robot extends SampleRobot {
 		FeedbackDeviceStatus status1 = fly1
 				.isSensorPresent(FeedbackDevice.QuadEncoder);
 		FeedbackDeviceStatus status2 = fly2
-				.isSensorPresent(FeedbackDevice.QuadEncoder);
-		FeedbackDeviceStatus status3 = angler
 				.isSensorPresent(FeedbackDevice.QuadEncoder);
 
 		switch (status1) {
@@ -157,34 +153,29 @@ public class Robot extends SampleRobot {
 		case FeedbackStatusUnknown:
 			System.out.println("Fly2 sensor status unknown");
 		}
-		switch (status3) {
-		case FeedbackStatusPresent:
-			System.out.println("Angler sensor functional");
-		case FeedbackStatusNotPresent:
-			System.out.println("Angler sensor nonfunctional");
-			// terminate robot? or just a warning?
-		case FeedbackStatusUnknown:
-			System.out.println("Angler sensor status unknown");
-		}
 	}
 
 	// Run before auto starts. Used for pulling dashboard values to be used
 	// in the operation of the bot
 	public void autoInit() {
-		flyP = prefs.getDouble("Flywheels P", flyP);
-		flyI = prefs.getDouble("Flywheels I", flyI);
-		flyD = prefs.getDouble("Flywheels D", flyD);
-		trim = prefs.getDouble("Trim", 0); // defaults to 0 trim. -1 is all power to left, 1 is all power to right
-		autoPower = prefs.getDouble("Autonomous Power to Wheels", 0); // defaults
-																		// to NO
-																		// auto
-		autoTime = prefs.getDouble("Autonomous time before stop", 0); // defaults
-																		// to NO
-																		// auto
-		alliance = prefs.getBoolean("Red Alliance", false); // defaults to blue
-															// alliance
-		serial.writeString("G#FFFFFF:#" + (alliance ? "FF0000" : "0000FF")
-				+ ":15"); // Gradient at beginning of auto
+//		flyP = prefs.getDouble("Flywheels P", flyP);
+//		flyI = prefs.getDouble("Flywheels I", flyI);
+//		flyD = prefs.getDouble("Flywheels D", flyD);
+//		trim = prefs.getDouble("Trim", 0); // defaults to 0 trim. -1 is all power to left, 1 is all power to right
+//		autoPower = prefs.getDouble("Autonomous power to wheels", 0); // defaults
+//																		// to NO
+//																		// auto
+//		autoTime = prefs.getDouble("Autonomous time before stop", 0); // defaults
+//																		// to NO
+//																		// auto
+//		alliance = prefs.getBoolean("Red Alliance", false); // defaults to blue
+//															// alliance
+		trim = 0;
+		autoPower = .6;
+		autoTime = 3;
+		alliance = false;
+		//serial.writeString("G#FFFFFF:#" + (alliance ? "FF0000" : "0000FF")
+			//	+ ":15"); // Gradient at beginning of auto
 	}
 
 	public void autonomous() {
@@ -209,7 +200,7 @@ public class Robot extends SampleRobot {
 	 */
 	public void operatorControl() {
 		allianceColor = alliance ? "FF0000" : "0000FF";
-		serial.writeString("V#" + allianceColor);
+		//serial.writeString("V#" + allianceColor);
 		NIVision.IMAQdxStartAcquisition(session);
 		initializeMechanism();
 
@@ -220,18 +211,18 @@ public class Robot extends SampleRobot {
 
 			x = drivestick.getX();
 			y = drivestick.getY();
-			mechX = mechstick.getX();
-			mechY = mechstick.getY();
 			z = drivestick.getZ();
 
 			if (Math.abs(x) > DEADZONEX || Math.abs(y) > DEADZONEY) {
-				trimRight = Math.signum(trim) > 0 ? 1-trim : 1;
-				trimLeft = Math.signum(trim) < 0 ? 1-Math.abs(trim) : 1;
+				//trimRight = Math.signum(trim) > 0 ? 1-trim : 1;
+				//trimLeft = Math.signum(trim) < 0 ? 1-Math.abs(trim) : 1;
+				trimRight = trimLeft = 1;
 				if (!drivestick.getRawButton(WHEELIE_BTN)) {
 					bogieLeft1.set(trimLeft*(x + -y));
 					bogieLeft2.set(trimLeft*(x + -y)); // these two need to be reversed
 					bogieRight1.set(trimRight*(x + y));
 					bogieRight2.set(trimRight*(x + y));
+					//System.out.println("Set no wheelie");
 				} else {
 					bogieLeft1.set(0);
 					bogieLeft2.set(0);
@@ -240,6 +231,7 @@ public class Robot extends SampleRobot {
 				}
 				if (!rearLeftDisable) {
 					backLeft.set(trimLeft*(x - y));
+					//System.out.println("Rear left set");
 				} else {
 					backLeft.set(0);
 				}
@@ -273,7 +265,7 @@ public class Robot extends SampleRobot {
 				}
 			}
 
-			camServo.setAngle(z * 90 + 180);
+			//camServo.setAngle(z * 90 + 180);
 			
 
 			boolean flyOutButton = mechstick.getRawButton(FLYOUT_BTN);
@@ -286,17 +278,17 @@ public class Robot extends SampleRobot {
 				if (fireButton) {
 					ballPusher.stepFwd();
 				}
-				serial.writeString("F#FFFFFF:#" + allianceColor +":.4");
+				//serial.writeString("F#FFFFFF:#" + allianceColor +":.4");
 			} else if (flyInButton) {
 				fly1.set(FLYWHEELS_GRABRATE);// not sure which should be + and -
 				fly2.set(-FLYWHEELS_GRABRATE);
 				ballPusher.stepBwd();
-				serial.writeString("F#FFFFFF:#" + allianceColor +":.4");
+				//serial.writeString("F#FFFFFF:#" + allianceColor +":.4");
 			}
 
 			else {
 				//while not shooting
-				serial.writeString("V#" + allianceColor);
+				//serial.writeString("V#" + allianceColor);
 				fly1.set(0);
 				fly2.set(0);
 				ballPusher.stepBwd();
@@ -312,7 +304,6 @@ public class Robot extends SampleRobot {
 	 * constants as well as the control modes.
 	 */
 	private void initializeMechanism() {
-		angler.changeControlMode(CANTalon.TalonControlMode.Position);
 		fly1.changeControlMode(CANTalon.TalonControlMode.Speed);
 		fly2.changeControlMode(CANTalon.TalonControlMode.Speed);
 		fly1.setPID(flyP, flyI, flyD);
@@ -321,9 +312,6 @@ public class Robot extends SampleRobot {
 		fly2.setPID(flyP, flyI, flyD);
 		fly2.setCloseLoopRampRate(0.0);
 		fly2.setIZone(0);
-		angler.setPID(angP, angI, angD);
-		angler.setIZone(0);
-		angler.setCloseLoopRampRate(0.0);
 	}
 
 	
@@ -332,7 +320,7 @@ public class Robot extends SampleRobot {
 			backRight, bogieRight1, bogieRight2 };
 
 	public void test() {
-		while (isTest() && isEnabled()) { 
+		while (isTest() && isEnabled()) {
 			SmartDashboard.putNumber("Test Motor: ", motorSwitch);
 			y = drivestick.getY();
 			if (drivestick.getRawButton(1)) {
