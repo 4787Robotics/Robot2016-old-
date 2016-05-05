@@ -72,7 +72,7 @@ public class Robot extends SampleRobot {
 	Victor backRight = new Victor(BRIGHT_PWM);
 	Talon bogieRight1 = new Talon(BOGRIGHT1_PWM);
 	Talon bogieRight2 = new Talon(BOGRIGHT2_PWM);
-	//SerialPort serial = new SerialPort(19200, SerialPort.Port.kOnboard);
+	SerialPort serial = new SerialPort(19200, SerialPort.Port.kOnboard);
 																			// serial
 	/*
 	 * HOW TO USE: write newline terminated strings with particular format:
@@ -104,7 +104,7 @@ public class Robot extends SampleRobot {
 	}
 
 	public void robotInit() {
-		//serial.disableTermination();
+		serial.disableTermination();
 		//serial.writeString("V#FFFFFF\n");
 		System.out.println("Tried setting color to white.");
 		//NIVision.IMAQdxSetAttributeU32(session,
@@ -116,6 +116,24 @@ public class Robot extends SampleRobot {
 		//while (!isEnabled()) {
 			//serial.writeString("V#FFFFFF\n");
 		//}
+		try{
+		serial.setTimeout(4);
+		serial.reset();
+		}
+		catch( Exception e) {
+			System.out.println("Exception: +"+e);
+		}
+		while (true) {
+			try{
+			serial.writeString("test");
+			serial.flush();
+			System.out.print(serial.getBytesReceived()+": ");
+			System.out.println("serial: "+serial.readString());
+			}
+			catch(Exception e) {
+				System.out.println("Inner exception: "+e);
+			}
+		}
 	}
 
 	/**
